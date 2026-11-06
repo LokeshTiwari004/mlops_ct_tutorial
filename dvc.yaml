@@ -7,3 +7,21 @@ stages:
     outs:
     - data/eval.csv
     - data/train.csv
+  train:
+    cmd: uv run src/train.py
+    deps:
+    - data/train.csv
+    - src/train.py
+    outs:
+    - models/model.joblib
+    - models/training_config.json:
+        cache: false
+  eval:
+    cmd: uv run src/eval.py
+    deps:
+    - data/eval.csv
+    - models/model.joblib
+    - src/eval.py
+    metrics:
+    - models/metrics.json:
+        cache: false
