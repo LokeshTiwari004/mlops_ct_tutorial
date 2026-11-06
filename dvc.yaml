@@ -1,0 +1,9 @@
+stages:
+  split:
+    cmd: uv run src/split.py
+    deps:
+    - data/iris.csv
+    - src/split.py
+    outs:
+    - data/eval.csv
+    - data/train.csv
