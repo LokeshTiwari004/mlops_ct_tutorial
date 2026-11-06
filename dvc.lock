@@ -1,0 +1,62 @@
+schema: '2.0'
+stages:
+  split:
+    cmd: uv run src/split.py
+    deps:
+    - path: data/iris.csv
+      hash: md5
+      md5: 4954d4088152604322732f13c4e14691
+      size: 2606
+    - path: src/split.py
+      hash: md5
+      md5: 821cdefa39b189982b8e0d9a3ea44a6a
+      size: 2021
+    outs:
+    - path: data/eval.csv
+      hash: md5
+      md5: 0e6c13386fd42b9b682ea9e65e2f2a7e
+      size: 586
+    - path: data/train.csv
+      hash: md5
+      md5: 3b74096c48775cc4b4bd1054a13ad730
+      size: 2078
+  train:
+    cmd: uv run src/train.py
+    deps:
+    - path: data/train.csv
+      hash: md5
+      md5: 3b74096c48775cc4b4bd1054a13ad730
+      size: 2078
+    - path: src/train.py
+      hash: md5
+      md5: bacf400facbbb703a7138dd28fb6ce2e
+      size: 2721
+    outs:
+    - path: models/model.joblib
+      hash: md5
+      md5: 4f20def22e763a08e6db8edf2e24e703
+      size: 3105
+    - path: models/training_config.json
+      hash: md5
+      md5: c390c09125dcb426f7a17701bc194d3e
+      size: 364
+  eval:
+    cmd: uv run src/eval.py
+    deps:
+    - path: data/eval.csv
+      hash: md5
+      md5: 0e6c13386fd42b9b682ea9e65e2f2a7e
+      size: 586
+    - path: models/model.joblib
+      hash: md5
+      md5: 4f20def22e763a08e6db8edf2e24e703
+      size: 3105
+    - path: src/eval.py
+      hash: md5
+      md5: 479fe1a652e06d2c34bf7f762565c3e1
+      size: 2762
+    outs:
+    - path: models/metrics.json
+      hash: md5
+      md5: da7d6c0957e95d19bdd61443f379908e
+      size: 1156
