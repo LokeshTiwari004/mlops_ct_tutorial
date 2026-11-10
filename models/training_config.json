@@ -1,0 +1,20 @@
+{
+  "model_type": "DecisionTreeClassifier",
+  "params": {
+    "random_state": 42,
+    "max_depth": 10
+  },
+  "feature_columns": [
+    "sepal_length",
+    "sepal_width",
+    "petal_length",
+    "petal_width"
+  ],
+  "label_column": "species",
+  "train_path": "data/train.csv",
+  "n_train_rows": 80,
+  "training_metrics": {
+    "accuracy": 1,
+    "f1_macro": 1
+  }
+}

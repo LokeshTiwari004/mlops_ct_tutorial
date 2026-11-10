@@ -1,0 +1,78 @@
+name: Continuous Training
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'why run'
+        required: false
+        default: 'manual'
+  push:
+    branches:
+      - master
+      - dev
+    paths:
+      - 'src/**'
+      - 'data/iris.csv.dvc'
+      - 'dvc.yaml'
+      - 'dvc.lock'
+      - 'requirements.txt'
+  pull_request:
+    branches:
+      - master
+    paths-ignore:
+      - 'README.md'
+      - '.gitignore'
+      - 'bootstrap.sh'
+      - '.env.cloudbuild.example'
+jobs:
+  ct:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write       # checkout + commit comments
+      id-token: write       # WIF OIDC
+      pull-requests: write  # PR comments
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_SA_EMAIL }}
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - uses: iterative/setup-cml@v2
+
+      - name: Create virtual environment and install dependencies
+        run: |
+          uv venv
+          uv pip install -r requirements.txt
+
+      - name: Pull DVC data and models
+        run: uv run dvc pull
+
+      - name: Reproduce DVC pipeline (data validation -> split -> train -> eval)
+        run: uv run dvc repro
+
+      - name: Push updated data and models to DVC remote
+        run: uv run dvc push
+
+      - name: CML report
+        env:
+          # Prefer a PAT (secret CML_PAT) for commit comments; GitHub locks
+          # commit-comment updates made with the default GITHUB_TOKEN.
+          REPO_TOKEN: ${{ secrets.CML_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          BASE="${{ github.base_ref || 'master' }}"
+          echo "## Metrics: vs $BASE" >> report.md
+          git fetch --depth=1 origin "$BASE"
+          uv run dvc metrics diff "origin/$BASE" --md >> report.md \
+            || uv run dvc metrics show --md >> report.md
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            cml comment update report.md                  # PR comment
+          else
+            cml comment update --target=commit report.md  # commit comment (push / dispatch)
+          fi
