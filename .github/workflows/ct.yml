@@ -28,20 +28,23 @@ on:
 jobs:
   ct:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write       # checkout + commit comments
+      id-token: write       # WIF OIDC
+      pull-requests: write  # PR comments
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+      - uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
           service_account: ${{ vars.GCP_SA_EMAIL }}
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
+
+      - uses: iterative/setup-cml@v2
 
       - name: Create virtual environment and install dependencies
         run: |
@@ -56,3 +59,20 @@ jobs:
 
       - name: Push updated data and models to DVC remote
         run: uv run dvc push
+
+      - name: CML report
+        env:
+          # Prefer a PAT (secret CML_PAT) for commit comments; GitHub locks
+          # commit-comment updates made with the default GITHUB_TOKEN.
+          REPO_TOKEN: ${{ secrets.CML_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          BASE="${{ github.base_ref || 'master' }}"
+          echo "## Metrics: vs $BASE" >> report.md
+          git fetch --depth=1 origin "$BASE"
+          uv run dvc metrics diff "origin/$BASE" --md >> report.md \
+            || uv run dvc metrics show --md >> report.md
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            cml comment update report.md                  # PR comment
+          else
+            cml comment update --target=commit report.md  # commit comment (push / dispatch)
+          fi
