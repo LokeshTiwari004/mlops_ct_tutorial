@@ -32,7 +32,7 @@ CONFIG_PATH = os.path.join(MODELS_DIR, "training_config.json")
 
 LABEL_COLUMN = "species"
 
-DEFAULT_PARAMS = {"random_state": 42, "max_depth": 10}
+DEFAULT_PARAMS = {"random_state": 42, "max_depth": 3}
 
 
 def feature_columns(df):
