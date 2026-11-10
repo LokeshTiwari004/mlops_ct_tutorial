@@ -60,3 +60,14 @@ stages:
       hash: md5
       md5: da7d6c0957e95d19bdd61443f379908e
       size: 1156
+  data_validation:
+    cmd: uv run python -m unittest src.validate
+    deps:
+    - path: data/iris.csv
+      hash: md5
+      md5: 4954d4088152604322732f13c4e14691
+      size: 2606
+    - path: src/validate.py
+      hash: md5
+      md5: 63dd81d04809e0ba2095a27fac61d79e
+      size: 4131
