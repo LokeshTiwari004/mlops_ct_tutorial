@@ -8,15 +8,16 @@ gcloud auth application-default set-quota-project "$PROJECT_ID"
 
 PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
 GITHUB_USERNAME=$(gh api user --jq '.login')
-GITHUB_REPO=$(basename "$(git remote get-url origin)" .git)
-SA=$(echo "$GITHUB_REPO-actions" | sed 's/_/-/g')
+GITHUB_REPO_NAME=$(basename "$(git remote get-url origin)" .git)
+GITHUB_REPO_FULL=$(gh repo view --json nameWithOwner --jq '.nameWithOwner')
+SA=$(echo "$GITHUB_REPO_NAME-actions" | sed 's/_/-/g')
 SA_EMAIL="$SA@${PROJECT_ID}.iam.gserviceaccount.com"
 WORKLOAD_IDENTITY_PROVIDER="projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/$WIF_POOL/providers/$WIF_PROVIDER"
+WIF_PRINCIPAL_SET="principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/$WIF_POOL/attribute.repository/$GITHUB_REPO_FULL"
 
 
 echo "GCP Project: $PROJECT_ID"
-echo "GITHUB_USERNAME=$GITHUB_USERNAME"
-echo "REPO=$GITHUB_REPO"
+echo "REPO=$GITHUB_REPO_FULL"
 
 grep -v "WORKLOAD_IDENTITY_PROVIDER\|SA_EMAIL" .env.cloudbuild > .env.cloudbuild.swp
 echo "SA_EMAIL=$SA_EMAIL" | tee -a .env.cloudbuild.swp
@@ -46,11 +47,7 @@ else
       --uniform-bucket-level-access \
       --location="$GCS_REGION"
 
-    gcloud storage buckets add-iam-policy-binding gs://$GCS_BUCKET \
-      --member="serviceAccount:$SA_EMAIL" \
-      --role="roles/storage.objectAdmin"
-
-    echo "Bucket $GCS_BUCKET created. Added IAM policy binding for $SA_EMAIL."
+    echo "Bucket $GCS_BUCKET created."
 fi
 
 # Create Workload Identity Pool
@@ -87,15 +84,18 @@ if gcloud iam service-accounts list --project="${PROJECT_ID}" | grep -q "$SA"; t
 else
     gcloud iam service-accounts create "$SA" \
       --project="${PROJECT_ID}" \
-      --display-name="$GITHUB_USERNAME/$GITHUB_REPO Actions SA"
+      --display-name="$GITHUB_REPO_FULL Actions SA"
 fi
 
-# Add IAM policy binding for Workload Identity Pool
-if gcloud iam service-accounts get-iam-policy "${SA_EMAIL}" --project="${PROJECT_ID}" | grep -q "roles/iam.workloadIdentityUser"; then
-    echo "IAM policy binding for $SA_EMAIL already exists."
-else
-    gcloud iam service-accounts add-iam-policy-binding "${SA_EMAIL}" \
-      --project="${PROJECT_ID}" \
-      --role="roles/iam.workloadIdentityUser" \
-      --member="principalSet://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${WIF_POOL}/attribute.repository/${GITHUB_REPO}"
-fi
+# Grant the Actions service account access to the bucket (idempotent, always run)
+gcloud storage buckets add-iam-policy-binding "gs://$GCS_BUCKET" \
+  --member="serviceAccount:$SA_EMAIL" \
+  --role="roles/storage.objectAdmin"
+echo "Bucket IAM policy binding ensured for $SA_EMAIL."
+
+# Add IAM policy binding for Workload Identity Pool (idempotent, always run)
+gcloud iam service-accounts add-iam-policy-binding "${SA_EMAIL}" \
+  --project="${PROJECT_ID}" \
+  --role="roles/iam.workloadIdentityUser" \
+  --member="${WIF_PRINCIPAL_SET}"
+echo "Workload Identity IAM policy binding ensured for $WIF_PRINCIPAL_SET."
