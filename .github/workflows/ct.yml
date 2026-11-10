@@ -1,0 +1,52 @@
+name: Continuous Training
+
+on:
+  push:
+    branches:
+      - master
+      - dev
+    paths:
+      - 'src/**'
+      - 'data/iris.csv.dvc'
+      - 'dvc.yaml'
+      - 'dvc.lock'
+      - 'requirements.txt'
+  pull_request:
+    branches:
+      - master
+    paths-ignore:
+      - 'README.md'
+      - '.gitignore'
+      - 'bootstrap.sh'
+      - '.env.cloudbuild.example'
+jobs:
+  ct:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_SA_EMAIL }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Create virtual environment and install dependencies
+        run: |
+          uv venv
+          uv pip install -r requirements.txt
+
+      - name: Pull DVC data and models
+        run: uv run dvc pull
+
+      - name: Reproduce DVC pipeline (data validation -> split -> train -> eval)
+        run: uv run dvc repro
+
+      - name: Push updated data and models to DVC remote
+        run: uv run dvc push
