@@ -1,6 +1,12 @@
 name: Continuous Training
 
 on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'why run'
+        required: false
+        default: 'manual'
   push:
     branches:
       - master
