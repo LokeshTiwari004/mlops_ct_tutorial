@@ -71,7 +71,9 @@ jobs:
       # workflows.
       # ------------------------------------------------------------------
       - name: Commit metadata directly to dev
-        if: github.event_name == 'push' && github.ref_name == 'dev'
+        # run for direct dev pushes AND manual dispatch on dev;
+        # never for PRs, and never for master (protected: PR required).
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref_name == 'dev'
         env:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
