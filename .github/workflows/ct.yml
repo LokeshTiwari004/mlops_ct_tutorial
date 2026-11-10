@@ -17,6 +17,7 @@ on:
       - 'dvc.yaml'
       - 'dvc.lock'
       - 'requirements.txt'
+      - '.github/workflows/ct.yml'
   pull_request:
     branches:
       - master
