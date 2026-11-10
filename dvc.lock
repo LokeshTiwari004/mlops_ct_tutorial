@@ -29,17 +29,17 @@ stages:
       size: 2078
     - path: src/train.py
       hash: md5
-      md5: bacf400facbbb703a7138dd28fb6ce2e
-      size: 2721
+      md5: c761b20921af9a6080b2dae8a4204864
+      size: 2720
     outs:
     - path: models/model.joblib
       hash: md5
-      md5: 4f20def22e763a08e6db8edf2e24e703
-      size: 3105
+      md5: 5e76c1812c8dceacd08e0d9add63692a
+      size: 2401
     - path: models/training_config.json
       hash: md5
-      md5: c390c09125dcb426f7a17701bc194d3e
-      size: 364
+      md5: 42b93ec5473229a258a9cba83d88dfb4
+      size: 363
   eval:
     cmd: uv run src/eval.py
     deps:
@@ -49,8 +49,8 @@ stages:
       size: 586
     - path: models/model.joblib
       hash: md5
-      md5: 4f20def22e763a08e6db8edf2e24e703
-      size: 3105
+      md5: 5e76c1812c8dceacd08e0d9add63692a
+      size: 2401
     - path: src/eval.py
       hash: md5
       md5: 479fe1a652e06d2c34bf7f762565c3e1
@@ -58,8 +58,8 @@ stages:
     outs:
     - path: models/metrics.json
       hash: md5
-      md5: da7d6c0957e95d19bdd61443f379908e
-      size: 1156
+      md5: 6d5c7e03b12f22679e9345d832325f7c
+      size: 1113
   data_validation:
     cmd: uv run python -m unittest src.validate
     deps:
