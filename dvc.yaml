@@ -1,4 +1,9 @@
 stages:
+  data_validation:
+    cmd: uv run python -m pytest src.validate
+    deps:
+    - data/iris.csv
+    - src/validate.py
   split:
     cmd: uv run src/split.py
     deps:
