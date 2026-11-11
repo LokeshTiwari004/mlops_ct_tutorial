@@ -2,7 +2,7 @@
   "model_type": "DecisionTreeClassifier",
   "params": {
     "random_state": 42,
-    "max_depth": 10
+    "max_depth": 3
   },
   "feature_columns": [
     "sepal_length",
@@ -14,7 +14,7 @@
   "train_path": "data/train.csv",
   "n_train_rows": 80,
   "training_metrics": {
-    "accuracy": 1,
-    "f1_macro": 1
+    "accuracy": 0,
+    "f1_macro": 0
   }
 }
